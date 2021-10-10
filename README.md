@@ -1,5 +1,6 @@
-# This is a small project to showcase API via the Python framework Bottle.
+# Welcome
 
+## This is a small project to showcase API via the Python framework Bottle.
 
 ## Relations
 
