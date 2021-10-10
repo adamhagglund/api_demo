@@ -17,6 +17,7 @@ are both primary keys and foreign keys:
 + deliveredAmount(**delivery_id**, _cookie_id_, _order_id_, order_quantity)
 
 ## Requires
+- sqlite (sudo apt install sqlite3)
 - Bottle (pip install Bottle)
 - request (pip install requests)
 
