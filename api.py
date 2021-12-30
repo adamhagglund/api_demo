@@ -1,10 +1,22 @@
-from bottle import get, post, run, request, response
+from bottle import get, post, run, hook, request, response
 import sqlite3
 import json
 
 HOST = 'localhost'
 PORT = 8888
-conn = sqlite3.connect("cookies.sqlite")
+conn = sqlite3.connect("cookies.db")
+
+_allow_origin = '*'
+_allow_methods = 'PUT, GET, POST, DELETE, OPTIONS'
+_allow_headers = 'Authorization, Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token'
+
+@hook('after_request')
+def enable_cors():
+    '''Add headers to enable CORS'''
+
+    response.headers['Access-Control-Allow-Origin'] = _allow_origin
+    response.headers['Access-Control-Allow-Methods'] = _allow_methods
+    response.headers['Access-Control-Allow-Headers'] = _allow_headers
 
 
 def url(resource):
@@ -13,6 +25,11 @@ def url(resource):
 
 def format_response(d):
     return json.dumps(d, indent=4) + "\n"
+
+@get('/test')
+def test():
+    response.status = 200
+    return format_response({"status" : "ok"})
 
 @post('/reset')
 def reset():
@@ -24,7 +41,7 @@ def reset():
 def get_customers():
     response.content_type = 'application/json'
     c = conn.cursor()
-    c.execute(    
+    c.execute(
         """
         SELECT name, address
         FROM   customers
@@ -34,7 +51,7 @@ def get_customers():
          for (name, address) in c]
     response.status = 200
     return format_response({"customers" : s})
-    
+
 @get('/ingredients')
 def get_ingredients():
     response.content_type = 'application/json'
@@ -82,6 +99,32 @@ def get_recipes():
     response.status = 200
     return format_response({"recipes" : s})
 
+@get('/frecipes')
+def get_frecipes():
+    response.content_type = 'application/json'
+    cookie_name = request.query.cookie
+
+    if not (cookie_name):
+        response.status = 400
+        return format_response({"error": "Missing parameter"})
+
+    c = conn.cursor()
+    c.execute(
+        """
+        SELECT  ingredient_name, recipe_quantity, unit
+        FROM    recipeLines
+        JOIN    ingredients
+        USING   (ingredient_name)
+        WHERE   cookie_name =?
+        """,
+        [cookie_name]
+    )
+
+    s = [{"ingredient" : ingredient_name, "quantity" : recipe_quantity, "unit" : recipe_unit}
+         for (ingredient_name, recipe_quantity, recipe_unit) in c]
+
+    response.status = 200
+    return format_response({"ingredients" : s})
 
 
 @post('/pallets')
@@ -128,7 +171,7 @@ def post_pallet():
             response.status = 400
             return format_response({"status" : "not enough ingredients"})
         row = c.fetchone()
-    
+
     for ingredient in ingredients:
         c.execute(
             """
@@ -138,7 +181,7 @@ def post_pallet():
             """ ,
             [int(ingredient[1]) - (int(ingredient[0]) * 54), ingredient[2]]
         )
-    
+
     c.execute(
         """
         INSERT
@@ -183,7 +226,7 @@ def get_pallets():
         query += "AND blocked = ?"
         params.append(request.query.blocked)
 
-    
+
     c = conn.cursor()
     c.execute(
         query,

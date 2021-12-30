@@ -31,10 +31,9 @@ The scripts used to set up and populate the database are in:
 So, to create and initialize the database, we run:
 
 ```shell
-sqlite3 name.db < create-schema.sql
+sqlite3 cookies.db < create-schema.sql
 ```
 
-(Choose _name_ to whatever you want to call your database file).
 
 ## How to compile and run the program
 
